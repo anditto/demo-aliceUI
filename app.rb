@@ -76,14 +76,21 @@ get '/pointrequest' do
   # {"request": {"suica":200}, "offer":"ANA"}
   #
   ### Expecting to receive:
-  # {"fee":15, "asset_id":"ANA", "cost":400, "tx":"0000132...."}
+  # {"fee":15, "assetid":"ANA", "cost":400, "tx":"0000132...."}
+
+  # Dummy data
+  requestexchange = {"request": {"suica":200}, "offer":"ANA"}
+  response = {"fee":15, "assetid":"ANA", "cost":400, "tx":"0000132...."}
+
+  # Redirect on a success
+  #redirect '/confirm?response='+response["tx"].to_s
   erb :pointrequest
 end
 
 # /transaction?response=reponse
 get '/confirm' do
   ### Expecting to receive:
-  # {"fee":15, "asset_id":"ANA", "cost":400, "tx":"0000132...."}
+  # {"fee":15, "assetid":"ANA", "cost":400, "tx":"0000132...."}
   response = params['response']
 
   alice = BitcoinRPC.new('http://user:password@localhost:10000')
