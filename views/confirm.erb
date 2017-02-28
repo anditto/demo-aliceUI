@@ -14,7 +14,15 @@
     <div class="container">
       <div class="row">
         <div class="col-md-12">
-          <%= tx %>
+          エックスチェンジからの依頼は:
+        </div>
+        <div class="col-md-12">
+          <p><%= cost %>の<%= assetid %></p>
+          <p>Fee: <%= fee %></p>
+        </div>
+        <div>
+          <p>この条件でポイントを交換しますか？</p>
+          <a href="/" class="btn btn-danger">いいえ</a><a href="/process" class="btn btn-success">はい</a>
         </div>
       </div>
     </div>
