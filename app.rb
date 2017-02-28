@@ -2,6 +2,14 @@ require 'sinatra'
 require 'net/http'
 require 'uri'
 require 'json'
+#require 'eventmachine'
+#require 'em-http'
+#require 'fiber'
+
+#def async_fetch(url)
+#  f = Fiber.current
+#  http = EventMachine::HttpRequest.new(url).
+#end
 
 class BitcoinRPC
   def initialize(service_url)
