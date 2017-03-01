@@ -182,21 +182,25 @@ get '/pointrequest' do
   requestexchange = {"request"=>{"suica"=>200}, "offer"=>"ANA"}
 
   #TODO Sends request to Charlie
-  url = URI.parse("http://charlieip:8020")
-  http    = Net::HTTP.new(url.host, url.port)
-  request = Net::HTTP::Post.new(url.request_uri)
-  request.content_type = 'application/json'
-  request.body = requestexchange.to_json
-  #response = JSON.parse(http.request(request.body))
+  url = URI.parse("http://10.4.2.2:8020/getexchangeoffer/")
+  request = Net::HTTP::Post.new(url)
+  request.content_type = "text/plain;"
+  request.body = JSON.dump(requestexchange)
 
-  txfragment = "0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"
-  response = {"fee"=>15, "assetid"=>"ANA", "cost"=>400, "tx"=>txfragment}
+  req_options = {
+    use_ssl: url.scheme == "https",
+  }
 
+  response = Net::HTTP.start(url.hostname, url.port, req_options) do |http|
+    http.request(request)
+  end
+  parsed_response = JSON.parse(response.body)
+  
   get_data = ""
   get_data += "request_assetid=" + requestexchange['request'].first[0] +
     "&request_amount=" + requestexchange['request'].first[1].to_s +
     "&offer=" + requestexchange['offer']
-  response.each do |k,v|
+  parsed_response.each do |k,v|
     get_data += "&" + k.to_s + "=" + v.to_s
   end
 
@@ -204,13 +208,17 @@ get '/pointrequest' do
 
   # Redirect on a success
   redirect '/confirm?' + get_data
+
+  # Dummy Data
+  #txfragment = "0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"
+  #response = {"fee"=>15, "assetid"=>"ANA", "cost"=>400, "tx"=>txfragment}
 end
 
 # /transaction?response=reponse
 get '/confirm' do
   ### Expecting to receive:
   # {"fee":15, "assetid":"ANA", "cost":400, "tx":"0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"}
-  response = {"fee"=>15, "assetid"=>"ANA", "cost"=>400, "tx"=>"0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"}
+  #response = {"fee"=>15, "assetid"=>"ANA", "cost"=>400, "tx"=>"0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"}
 
   # Make sure contents are correct
   erb :confirm, locals:{
@@ -284,19 +292,26 @@ get '/process' do
   signed_tx = alice.signrawtransaction(full_tx)
 
   #TODO Send to Charlie
-  url = URI.parse("http://charlieip:8020")
-  http    = Net::HTTP.new(url.host, url.port)
-  request = Net::HTTP::Post.new(url.request_uri)
-  request.content_type = 'application/json'
-  request.body = {
-    "signed_tx" => signed_tx
-  }.to_json
-  #response = JSON.parse(http.request(request.body))
-  response = "Charlie's response"
+  url = URI.parse("http://10.4.2.2:8020/submitexchange/")
+  request = Net::HTTP::Post.new(uri)
+  request.content_type = "text/plain;"
+  request.body = JSON.dump({
+    "tx" => signed_tx
+  })
+
+  req_options = {
+    use_ssl: uri.scheme == "https",
+  }
+
+  response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
+    http.request(request)
+  end
+
+  parsed_response = JSON.parse(response)
 
   erb :process, locals:{
     signed_tx:signed_tx,
-    response:response
+    response:parsed_response
   }
 end
 
