@@ -90,9 +90,19 @@
       <br />
       <div class="row">
         <div class="col-md-12">
-          <a href="/pointrequest" class="btn btn-success">Suicaポイントを依頼する</a>
+          <form>
+            <input type="text" placeholder="Shop Address" id="shopaddress" name="shopaddress">
+          </form>
+          <button class="btn btn-success" onclick="getaddress()">Suicaポイントを依頼する</button>
         </div>
       </div>
     </div>
+    <script>
+      function getaddress() {
+        var shopaddress = document.getElementById('shopaddress').value;
+        var link = '/pointrequest?shopaddress='+shopaddress;
+        window.location.href=link;
+      }
+    </script>
   </body>
 </html>

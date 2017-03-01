@@ -16,13 +16,21 @@
         <div class="col-md-12">
           エックスチェンジからの依頼は:
         </div>
+      </div>
+      <div class="row">
         <div class="col-md-12">
           <p><%= cost %>の<%= assetid %></p>
           <p>Fee: <%= fee %></p>
         </div>
         <div>
           <p>この条件でポイントを交換しますか？</p>
-          <a href="/" class="btn btn-danger">いいえ</a><a href="/process?<%= 'cost=' + cost + '&assetid=' + assetid + '&fee=' + fee + '&tx=' + tx %>" class="btn btn-success">はい</a>
+          <a href="/" class="btn btn-danger">いいえ</a><a href="/process?request_assetid=<%= request_assetid %>&request_amount=<%= request_amount %>&offer=<%= offer %>&fee=<%= fee %>&assetid=<%= assetid %>&cost=<%= cost %>&tx=<%= tx %>&shopaddress=<%= shopaddress %>" class="btn btn-success">はい</a>
+        </div>
+      </div>
+      <br />
+      <div class="row">
+        <div class="col-md-12">
+          Charlie's tx fragment: <%= tx %>
         </div>
       </div>
     </div>

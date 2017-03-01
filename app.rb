@@ -2,14 +2,6 @@ require 'sinatra'
 require 'net/http'
 require 'uri'
 require 'json'
-#require 'eventmachine'
-#require 'em-http'
-#require 'fiber'
-
-#def async_fetch(url)
-#  f = Fiber.current
-#  http = EventMachine::HttpRequest.new(url).
-#end
 
 class BitcoinRPC
   def initialize(service_url)
@@ -136,15 +128,12 @@ set :public_folder, File.dirname(__FILE__) + '/public'
 assetlabels = {}
 
 get '/' do
-  alice = BitcoinRPC.new('http://user:password@localhost:10000')
-  fred  = BitcoinRPC.new('http://user:password@localhost:10040')
+  alice = BitcoinRPC.new('http://user:pass@localhost:10000')
+  #fred  = BitcoinRPC.new('http://user:pass@10.4.2.2:10040')
 
   # Get asset IDs & labels
-  # I guess we get these somehow anyways
-  assetlabels = fred.dumpassetlabels
-  assetlabels.each do |label,id|
-    alice.addassetlabel(id,label)
-  end
+  # Assume Alice knows all labels & ID. I guess we get these somehow anyways
+  assetlabels = alice.dumpassetlabels
 
   # Get current balance
   balance = alice.getwalletinfo
@@ -180,8 +169,10 @@ get '/pointrequest' do
 
   # Dummy data
   requestexchange = {"request"=>{"suica"=>200}, "offer"=>"ANA"}
+  shopaddress = params['shopaddress']
+  #shopaddress = "2dZjSp7W7WVo7f1njRM24teQR4B6kQ8yH4j"
 
-  #TODO Sends request to Charlie
+  #Sends request to Charlie
   url = URI.parse("http://10.4.2.2:8020/getexchangeoffer/")
   request = Net::HTTP::Post.new(url)
   request.content_type = "text/plain;"
@@ -199,7 +190,7 @@ get '/pointrequest' do
   get_data = ""
   get_data += "request_assetid=" + requestexchange['request'].first[0] +
     "&request_amount=" + requestexchange['request'].first[1].to_s +
-    "&offer=" + requestexchange['offer']
+    "&offer=" + requestexchange['offer'] + "&shopaddress=" + shopaddress.to_s
   parsed_response.each do |k,v|
     get_data += "&" + k.to_s + "=" + v.to_s
   end
@@ -220,29 +211,28 @@ get '/confirm' do
   # {"fee":15, "assetid":"ANA", "cost":400, "tx":"0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"}
   #response = {"fee"=>15, "assetid"=>"ANA", "cost"=>400, "tx"=>"0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"}
 
-  # Make sure contents are correct
+  # TODO Make sure contents are correct
   erb :confirm, locals:{
-    cost:params['cost'].to_s,
-    assetid:params['assetid'].to_s,
+    request_assetid:params['request_assetid'].to_s,
+    request_amount:params['request_amount'].to_s,
+    offer:params['offer'].to_s,
     fee:params['fee'].to_s,
-    tx:params['tx'].to_s
+    assetid:params['assetid'].to_s,
+    cost:params['cost'].to_s,
+    tx:params['tx'].to_s,
+    shopaddress:params['shopaddress'].to_s
   }
 end
 
 get '/process' do
-  # TODO
-  # Need to move this into the URL parameters
-  requestexchange = {"request"=>{"suica"=>200}, "offer"=>"ANA"}
-  # Need to do this more elegantly
-  assetlabels = {
-    "ANA" => "018440844f994e0a3d95dd5b01f79d81a312a603a8bfa8293cc33fef0f39cae5",
-    "bitcoin" => "09f663de96be771f50cab5ded00256ffe63773e2eaa9a604092951cc3d7c6621",
-    "suica" => "e01e93d251c364a2918990e565ef8b0dd0be4c73740858a4759f213067bc1064"
-  }
+  # TODO Need to do this more elegantly
+  if assetlabels.empty?
+    assetlabels = alice.dumpassetlabels
+  end
 
   # Start
   tx = [params['tx']]
-  alice = BitcoinRPC.new('http://user:password@localhost:10000')
+  alice = BitcoinRPC.new('http://user:pass@localhost:10000')
 
   # Run listunspent
   list = alice.listunspent(params['assetid'])
@@ -268,14 +258,13 @@ get '/process' do
   tx << "in=" + list[0]['txid'] + ":" + vin_tx_index.to_s + ":" + vin_amount.to_s
 
   # Run getnewaddress
-  unblinded_points_addr = alice.getnewaddress[1]
   unblinded_change_addr = alice.getnewaddress[1]
 
   # Add necessary Vout
   # Suica Points for self
-  tx << "outaddr=" + requestexchange['request']['suica'].to_s + ":" +
-    unblinded_points_addr + ":" +
-    assetlabels[requestexchange['request'].first[0]]
+  tx << "outaddr=" + params['request_amount'].to_s + ":" +
+    params['shopaddress'] + ":" +
+    assetlabels[params['request_assetid']]
 
   # Change
   tx << "outaddr=" + change.to_s + ":" +
@@ -291,32 +280,29 @@ get '/process' do
   # Sign the transaction
   signed_tx = alice.signrawtransaction(full_tx)
 
-  #TODO Send to Charlie
+  #Send to Charlie
   url = URI.parse("http://10.4.2.2:8020/submitexchange/")
-  request = Net::HTTP::Post.new(uri)
+  request = Net::HTTP::Post.new(url)
   request.content_type = "text/plain;"
   request.body = JSON.dump({
     "tx" => signed_tx
   })
-
   req_options = {
-    use_ssl: uri.scheme == "https",
+    use_ssl: url.scheme == "https",
   }
 
-  response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
+  response = Net::HTTP.start(url.hostname, url.port, req_options) do |http|
     http.request(request)
   end
 
-  parsed_response = JSON.parse(response)
-
   erb :process, locals:{
     signed_tx:signed_tx,
-    response:parsed_response
+    response:response.body
   }
 end
 
 post '/sendtoaddress' do
-  alice = BitcoinRPC.new('http://user:password@localhost:10000')
+  alice = BitcoinRPC.new('http://user:pass@localhost:10000')
   res = alice.sendtoaddress(params['address'], params['amount'], params['assetid'])
   redirect to('/sendtoaddress')
 end
