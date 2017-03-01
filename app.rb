@@ -16,125 +16,117 @@ class BitcoinRPC
     @uri = URI.parse(service_url)
   end
 
-  def dumpassetlabels
+  def setup
     http    = Net::HTTP.new(@uri.host, @uri.port)
     request = Net::HTTP::Post.new(@uri.request_uri)
     request.basic_auth @uri.user, @uri.password
     request.content_type = 'application/json'
-    request.body = {
+    [http,request]
+  end
+
+  def dumpassetlabels
+    conn = setup
+    conn[1].body = {
       'method' => 'dumpassetlabels',
       'params' => [],
       'id' => 'jsonrpc'
     }.to_json
-    res = JSON.parse(http.request(request).body)
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 
   def addassetlabel(id,label)
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = {
+    conn = setup
+    conn[1].body = {
       'method' => 'addassetlabel',
       'params' => [id,label],
       'id' => 'jsonrpc'
     }.to_json
-    res = JSON.parse(http.request(request).body)
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 
   def getwalletinfo
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = {
+    conn = setup
+    conn[1].body = {
       'method' => 'getwalletinfo',
       'params' => ['*'],
       'id' => 'jsonrpc'
     }.to_json
-    res = JSON.parse(http.request(request).body)
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 
   def getnewaddress
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = { 'method' => 'getnewaddress', 'params' => [], 'id' => 'jsonrpc' }.to_json
-    res = JSON.parse(http.request(request).body)
+    conn = setup
+    conn[1].body = { 'method' => 'getnewaddress', 'params' => [], 'id' => 'jsonrpc' }.to_json
+    res = JSON.parse(conn[0].request(conn[1]).body)
     blindedaddress = res['result']
-    request.body = { 'method' => 'validateaddress', 'params' => [blindedaddress], 'id' => 'jsonrpc' }.to_json
-    res = JSON.parse(http.request(request).body)
+    conn[1].body = { 'method' => 'validateaddress', 'params' => [blindedaddress], 'id' => 'jsonrpc' }.to_json
+    res = JSON.parse(conn[0].request(conn[1]).body)
     unblindedaddress = res['result']['unconfidential']
     [blindedaddress, unblindedaddress]
   end
 
   def decoderawtransaction(tx)
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = { 'method' => 'decoderawtransaction', 'params' => [tx], 'id' => 'jsonrpc' }.to_json
-    res = JSON.parse(http.request(request).body)
+    conn = setup
+    conn[1].body = { 'method' => 'decoderawtransaction', 'params' => [tx], 'id' => 'jsonrpc' }.to_json
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 
   def listunspent(assetid)
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = { 
+    conn = setup
+    conn[1].body = { 
       'method' => 'listunspent',
       'params' => [1,9999999,[],assetid],
       'id' => 'jsonrpc'
     }.to_json
-    res = JSON.parse(http.request(request).body)
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 
   def gettransaction(txid)
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = { 
+    conn = setup
+    conn[1].body = { 
       'method' => 'gettransaction',
       'params' => [txid],
       'id' => 'jsonrpc'
     }.to_json
-    res = JSON.parse(http.request(request).body)
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 
-  def mutatetx(txdata)
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = { 
+  def mutatetx(dataarray)
+    conn = setup
+    conn[1].body = { 
       'method' => 'mutatetx',
-      'params' => [txdata],
+      'params' => dataarray,
       'id' => 'jsonrpc'
     }.to_json
-    res = JSON.parse(http.request(request).body)
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 
-  def signtransaction(txdata)
-    http    = Net::HTTP.new(@uri.host, @uri.port)
-    request = Net::HTTP::Post.new(@uri.request_uri)
-    request.basic_auth @uri.user, @uri.password
-    request.content_type = 'application/json'
-    request.body = { 
-      'method' => 'signtransaction',
+  def signrawtransaction(txdata)
+    conn = setup
+    conn[1].body = { 
+      'method' => 'signrawtransaction',
       'params' => [txdata],
       'id' => 'jsonrpc'
     }.to_json
-    res = JSON.parse(http.request(request).body)
+    res = JSON.parse(conn[0].request(conn[1]).body)
+    res['result']['hex']
+  end
+
+  def sendtoaddress(address, amount, assetid)
+    conn = setup
+    conn[1].body = { 
+      'method' => 'sendtoaddress',
+      'params' => [address, amount, "", "", false, assetid],
+      'id' => 'jsonrpc'
+    }.to_json
+    res = JSON.parse(conn[0].request(conn[1]).body)
     res['result']
   end
 end
@@ -226,7 +218,7 @@ get '/process' do
   }
 
   # Start
-  tx = params['tx']
+  tx = [params['tx']]
   alice = BitcoinRPC.new('http://user:password@localhost:10000')
 
   # Run listunspent
@@ -250,7 +242,7 @@ get '/process' do
   end
 
   # Add necessary Vin
-  tx += " in=" + list[0]['txid'] + ":" + vin_tx_index.to_s + ":" + vin_amount.to_s
+  tx << "in=" + list[0]['txid'] + ":" + vin_tx_index.to_s + ":" + vin_amount.to_s
 
   # Run getnewaddress
   unblinded_points_addr = alice.getnewaddress[1]
@@ -258,25 +250,31 @@ get '/process' do
 
   # Add necessary Vout
   # Suica Points for self
-  tx += " outaddr=" + requestexchange['request']['suica'].to_s + ":" +
+  tx << "outaddr=" + requestexchange['request']['suica'].to_s + ":" +
     unblinded_points_addr + ":" +
     assetlabels[requestexchange['request'].first[0]]
 
   # Change
-  tx += " outaddr=" + change.to_s + ":" +
+  tx << "outaddr=" + change.to_s + ":" +
     unblinded_change_addr + ":" +
     assetlabels[params['assetid']]
 
   # Fee
-  tx += " outscript=" + params['fee'].to_s + ':"":' + assetlabels[params['assetid']]
+  tx << "outscript=" + params['fee'].to_s + '::' + assetlabels[params['assetid']]
 
   # Construct the transaction
   full_tx = alice.mutatetx(tx)
   
   # Sign the transaction
-  signed_tx = alice.signtransaction(full_tx)
+  signed_tx = alice.signrawtransaction(full_tx)
 
   # Send to Charlie
+  # TODO
 
   erb :process
+end
+
+get '/sendtoaddress' do
+  alice = BitcoinRPC.new('http://user:password@localhost:10000')
+  alice.sendtoaddress(params['address'], params['amount'], params['assetid'])
 end
