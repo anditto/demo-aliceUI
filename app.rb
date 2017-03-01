@@ -109,6 +109,34 @@ class BitcoinRPC
     res = JSON.parse(http.request(request).body)
     res['result']
   end
+
+  def mutatetx(txdata)
+    http    = Net::HTTP.new(@uri.host, @uri.port)
+    request = Net::HTTP::Post.new(@uri.request_uri)
+    request.basic_auth @uri.user, @uri.password
+    request.content_type = 'application/json'
+    request.body = { 
+      'method' => 'mutatetx',
+      'params' => [txdata],
+      'id' => 'jsonrpc'
+    }.to_json
+    res = JSON.parse(http.request(request).body)
+    res['result']
+  end
+
+  def signtransaction(txdata)
+    http    = Net::HTTP.new(@uri.host, @uri.port)
+    request = Net::HTTP::Post.new(@uri.request_uri)
+    request.basic_auth @uri.user, @uri.password
+    request.content_type = 'application/json'
+    request.body = { 
+      'method' => 'signtransaction',
+      'params' => [txdata],
+      'id' => 'jsonrpc'
+    }.to_json
+    res = JSON.parse(http.request(request).body)
+    res['result']
+  end
 end
 
 set :public_folder, File.dirname(__FILE__) + '/public'
@@ -242,9 +270,11 @@ get '/process' do
   # Fee
   tx += " outscript=" + params['fee'].to_s + ':"":' + assetlabels[params['assetid']]
 
-  p tx
+  # Construct the transaction
+  full_tx = alice.mutatetx(tx)
   
   # Sign the transaction
+  signed_tx = alice.signtransaction(full_tx)
 
   # Send to Charlie
 
