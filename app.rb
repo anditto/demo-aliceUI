@@ -106,9 +106,14 @@ get '/confirm' do
 
   alice = BitcoinRPC.new('http://user:password@localhost:10000')
   receivedtxfragment = alice.decoderawtransaction(params['tx'])
+  response = {"fee":15, "assetid":"ANA", "cost":400, "tx":"0100000001a0f9836b4ba55bccb6ebf9e199899d446e532008784cf439d24bd82cd1c182ab0100000000ffffffff02016410bc6730219f75a4580874734cbed00d8bef65e5908991a264c351d2931ee00100000002540be4001976a914d4391f69c20725f7811f44acc062107c2c94e74b88ac01e5ca390fef3fc33c29a8bfa803a612a3819df7015bdd953d0a4e994f844084010100000009502f90001976a914a1798cc6ee314d3daa4d530c3da7dd9bb5b10f4788ac00000000"}
+
 
   # Make sure contents are correct
   erb :confirm, locals:{
-    tx:receivedtxfragment
+    cost:response["cost"],
+    assetid:response['assetid'],
+    tx:receivedtxfragment["txid"],
+    fee:response['fee']
   }
 end
