@@ -62,8 +62,16 @@
       </div>
       <div class="row">
         <div class="col-md-12">
-          <form>
-            <input type="text">
+          <form method="POST" action="/sendtoaddress">
+            <input type="text" name="address" placeholder="address"><br />
+            <select name="assetid">
+              <option value="ANA">ANA</option>
+              <option value="suica">suica</option>
+              <option value="bitcoin">bitcoin</option>
+            </select>
+            <br />
+            <input type="number" name="amount" min="0" max="500" step="10" placeholder="0"><br />
+            <button type="submit" class="btn btn-default">送金</button>
           </form>
         </div>
       </div>
